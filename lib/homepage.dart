@@ -29,6 +29,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       parent: _animationController,
       curve: Curves.easeInOutBack,
     ));
+    imageController.addListener(() {
+      textController.jumpTo(imageController.offset * 0.13);
+      descriptionController.jumpTo(imageController.offset * 0.69);
+    });
   }
 
   _doAnimation() {
@@ -66,6 +70,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 _imagePageViewBuilder(mediaQuery),
               ],
             ),
+            const SizedBox(
+              height: 20,
+            ),
             _priceAndDescription(mediaQuery),
             _pizzaSizes(),
           ],
@@ -95,20 +102,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void _onPageChange(int pageIndex) {
     if (_animationController.isCompleted) {
       _doAnimation();
-      textController.jumpTo(
-        pageIndex.toDouble() == 1
-            ? pageIndex.toDouble() * 30
-            : pageIndex.toDouble() * 42,
-      );
-      descriptionController.jumpTo(
-        pageIndex.toDouble() == 1
-            ? pageIndex.toDouble() * 150
-            : pageIndex.toDouble() * 180,
-      );
     } else {
       _animationController.forward();
-      textController.jumpTo(pageIndex.toDouble() * 30);
-      descriptionController.jumpTo(pageIndex.toDouble() * 100);
     }
   }
 
@@ -116,6 +111,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         height: mediaQuery.height * 0.2,
         width: mediaQuery.width,
         child: PageView.builder(
+            physics: const NeverScrollableScrollPhysics(),
             controller: descriptionController,
             scrollDirection: Axis.vertical,
             itemCount: pizzas.length,
@@ -183,9 +179,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   _titlePageViewBuilder(Size mediaQuery) => Positioned(
         top: 80,
         child: SizedBox(
-          height: 50,
+          height: mediaQuery.height * 0.035,
           width: mediaQuery.width,
           child: PageView.builder(
+              physics: const NeverScrollableScrollPhysics(),
               controller: textController,
               itemCount: pizzas.length,
               scrollDirection: Axis.vertical,
