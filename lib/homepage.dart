@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:test/model.dart';
 
+enum PizzaSizes { S, M, L }
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -11,9 +13,11 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   final imageController = PageController(viewportFraction: 0.7);
   final textController = PageController();
+  final descriptionController = PageController();
 
   late Animation<double> _rotationAnimation;
   late AnimationController _animationController;
+  int selectedIndex = 1;
 
   @override
   void initState() {
@@ -49,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context).size;
+    Size mediaQuery = MediaQuery.of(context).size;
     return Scaffold(
       body: SingleChildScrollView(
         child: Column(
@@ -58,72 +62,112 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               children: [
                 _backGroundContainer(mediaQuery),
                 _icon(),
-                Positioned(
-                  top: 80,
-                  child: SizedBox(
-                    height: 50,
-                    width: mediaQuery.width,
-                    child: PageView.builder(
-                        controller: textController,
-                        itemCount: pizzas.length,
-                        scrollDirection: Axis.vertical,
-                        itemBuilder: (context, index) {
-                          return Align(
-                            alignment: Alignment.center,
-                            child: Text(
-                              pizzas[index].name,
-                              textScaler: const TextScaler.linear(2),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          );
-                        }),
-                  ),
-                ),
-                Positioned(
-                  bottom: 0,
-                  child: SizedBox(
-                    height: mediaQuery.height * 0.3,
-                    width: mediaQuery.width,
-                    child: PageView.builder(
-                        onPageChanged: (pageIndex) {
-                          if (_animationController.isCompleted) {
-                            _doAnimation();
-                            textController.jumpTo(imageController.offset * 0.2);
-                          } else {
-                            _animationController.forward();
-                            textController.jumpTo(imageController.offset * 0.2);
-                          }
-                        },
-                        controller: imageController,
-                        itemCount: pizzas.length,
-                        itemBuilder: (context, index) {
-                          return AnimatedBuilder(
-                            animation: _rotationAnimation,
-                            builder: (context, child) {
-                              return Transform.rotate(
-                                angle: _rotationAnimation.value,
-                                child: Image.asset(
-                                  height: mediaQuery.height * 0.25,
-                                  pizzas[index].url,
-                                ),
-                              );
-                            },
-                          );
-                        }),
-                  ),
-                ),
+                _titlePageViewBuilder(mediaQuery),
+                _imagePageViewBuilder(mediaQuery),
               ],
             ),
+            _priceAndDescription(mediaQuery),
+            _pizzaSizes(),
           ],
         ),
       ),
+      floatingActionButton: Container(
+        height: 70,
+        width: 300,
+        decoration: BoxDecoration(
+          color: Colors.yellow,
+          borderRadius: BorderRadius.circular(50),
+        ),
+        child: const Center(
+          child: Text(
+            "Order Now",
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
-  Widget _backGroundContainer(mediaQuery) => Container(
+  void _onPageChange(int pageIndex) {
+    if (_animationController.isCompleted) {
+      _doAnimation();
+      textController.jumpTo(
+        pageIndex.toDouble() == 1
+            ? pageIndex.toDouble() * 30
+            : pageIndex.toDouble() * 42,
+      );
+      descriptionController.jumpTo(
+        pageIndex.toDouble() == 1
+            ? pageIndex.toDouble() * 150
+            : pageIndex.toDouble() * 180,
+      );
+    } else {
+      _animationController.forward();
+      textController.jumpTo(pageIndex.toDouble() * 30);
+      descriptionController.jumpTo(pageIndex.toDouble() * 100);
+    }
+  }
+
+  Widget _priceAndDescription(Size mediaQuery) => SizedBox(
+        height: mediaQuery.height * 0.2,
+        width: mediaQuery.width,
+        child: PageView.builder(
+            controller: descriptionController,
+            scrollDirection: Axis.vertical,
+            itemCount: pizzas.length,
+            itemBuilder: (context, index) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 10,
+                    ),
+                    child: Text(
+                      "\$${pizzas[index].price.toString()}",
+                      textScaler: const TextScaler.linear(2),
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  Flexible(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 10),
+                      child: Text(
+                        pizzas[index].description,
+                        textScaler: const TextScaler.linear(1),
+                        style: const TextStyle(
+                          // overflow: TextOverflow.ellipsis,
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }),
+      );
+
+  Widget _icon() => const Positioned(
+        top: 10,
+        left: 10,
+        child: Icon(
+          color: Colors.white,
+          Icons.menu,
+          size: 34,
+        ),
+      );
+
+  Widget _backGroundContainer(Size mediaQuery) => Container(
         height: mediaQuery.height / 2,
         width: mediaQuery.width,
         decoration: BoxDecoration(
@@ -135,16 +179,74 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             )),
       );
-}
 
-Widget _icon() {
-  return const Positioned(
-    top: 10,
-    left: 10,
-    child: Icon(
-      color: Colors.white,
-      Icons.menu,
-      size: 34,
-    ),
-  );
+  _titlePageViewBuilder(Size mediaQuery) => Positioned(
+        top: 80,
+        child: SizedBox(
+          height: 50,
+          width: mediaQuery.width,
+          child: PageView.builder(
+              controller: textController,
+              itemCount: pizzas.length,
+              scrollDirection: Axis.vertical,
+              itemBuilder: (context, index) {
+                return Align(
+                  alignment: Alignment.center,
+                  child: Text(
+                    pizzas[index].name,
+                    textScaler: const TextScaler.linear(2),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                );
+              }),
+        ),
+      );
+
+  _pizzaSizes() => Row(
+        children: PizzaSizes.values.map((e) {
+          return OutlinedButton(
+            style: ButtonStyle(
+              backgroundColor: MaterialStateColor.resolveWith(
+                (states) =>
+                    e.index == selectedIndex ? Colors.black : Colors.white,
+              ),
+            ),
+            onPressed: () {
+              setState(() {
+                selectedIndex = e.index;
+              });
+            },
+            child: Text(e.name),
+          );
+        }).toList(),
+      );
+
+  _imagePageViewBuilder(Size mediaQuery) => Positioned(
+        bottom: 0,
+        child: SizedBox(
+          height: mediaQuery.height * 0.3,
+          width: mediaQuery.width,
+          child: PageView.builder(
+              onPageChanged: (pageIndex) => _onPageChange(pageIndex),
+              controller: imageController,
+              itemCount: pizzas.length,
+              itemBuilder: (context, index) {
+                return AnimatedBuilder(
+                  animation: _rotationAnimation,
+                  builder: (context, child) {
+                    return Transform.rotate(
+                      angle: _rotationAnimation.value,
+                      child: Image.asset(
+                        height: mediaQuery.height * 0.25,
+                        pizzas[index].url,
+                      ),
+                    );
+                  },
+                );
+              }),
+        ),
+      );
 }
