@@ -221,29 +221,40 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }).toList(),
       );
 
-  _imagePageViewBuilder(Size mediaQuery) => Positioned(
-        bottom: 0,
-        child: SizedBox(
-          height: mediaQuery.height * 0.3,
-          width: mediaQuery.width,
-          child: PageView.builder(
-              onPageChanged: (pageIndex) => _onPageChange(pageIndex),
-              controller: imageController,
-              itemCount: pizzas.length,
-              itemBuilder: (context, index) {
-                return AnimatedBuilder(
-                  animation: _rotationAnimation,
-                  builder: (context, child) {
-                    return Transform.rotate(
-                      angle: _rotationAnimation.value,
+  Widget _imagePageViewBuilder(Size mediaQuery) {
+    return Positioned(
+      bottom: 0,
+      child: SizedBox(
+        height: mediaQuery.height * 0.3,
+        width: mediaQuery.width,
+        child: AnimatedBuilder(
+            animation: imageController,
+            builder: (context, child) {
+              return PageView.builder(
+                onPageChanged: (pageIndex) => _onPageChange(pageIndex),
+                controller: imageController,
+                itemCount: pizzas.length,
+                itemBuilder: (context, index) {
+                  double value = 0.0;
+                  if (imageController.position.haveDimensions) {
+                    value = index.toDouble() - (imageController.page ?? 0);
+                    value = (value * 0.7).clamp(-1, 1);
+                  }
+                  return Transform.scale(
+                    scale: 1 - (value.abs() * 0.4),
+                    child: Transform.rotate(
+                      angle: value * 5,
+                      // _rotationAnimation.value,
                       child: Image.asset(
                         height: mediaQuery.height * 0.25,
                         pizzas[index].url,
                       ),
-                    );
-                  },
-                );
-              }),
-        ),
-      );
+                    ),
+                  );
+                },
+              );
+            }),
+      ),
+    );
+  }
 }
